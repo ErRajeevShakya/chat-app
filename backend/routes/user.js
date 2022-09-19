@@ -6,5 +6,7 @@ router.post("/login", userController.login);
 
 router.post("/signup", userController.signup);
 
-router.get("/alluser", userController.allUsers);
+router.get("/chatpage", userController.allUsers);
+
+router.post("/addfriend", userController.addfriend);
 export default router;
