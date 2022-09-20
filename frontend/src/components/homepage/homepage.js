@@ -1,38 +1,110 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import "./homepage.css";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Homepage = ({ setLoginUser, user }) => {
+  const Navigate = useNavigate();
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
   const searchHandler = (e) => {
+    console.log(search);
     setSearch(e.target.value);
   };
 
-  console.log(data[1]);
+  //user contlist search api calling
+
+  let [chatdata, setChatData] = useState({});
+
+  const ChatDataList = async () => {
+    try {
+      await axios
+        .get(`http://localhost:5000/chatlist/${user.email}`)
+        .then((res) => {
+          console.log(res.data.data);
+          setChatData(res.data.data);
+        })
+        .catch((err) => console.log(err));
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  //friend search api calling
+
+  const data1 = async () => {
+    try {
+      await axios
+        .get("http://localhost:5000/chatpage")
+        .then((res) => {
+          setData(res.data);
+        })
+        .catch((err) => console.log(err));
+    } catch (err) {
+      console.log(err);
+    }
+  };
   useEffect(() => {
-    axios.get("http://localhost:5000/alluser").then(async (res) => {
-      setData(res.data);
-    });
+    ChatDataList();
+    data1();
   }, []);
 
+  console.log(user);
+  console.log(chatdata);
 
-  const userlist = data.filter((user) => {
+  const [friendlist, setFriendList] = useState("");
+  // let chatlist = [];
 
-  
+  // const handler = (chatdata) => {
+  //   chatlist = chatdata.friend.filter((userlist) => {
+  //     if (friendlist === "") {
+  //       return userlist;
+  //     }
+  //     if (userlist.name.toLowerCase().includes(friendlist.toLowerCase())) {
+  //       return userlist;
+  //     } else {
+  //       return console.log("not found");
+  //     }
+  //   });
+  // };
 
-    if (search === "") {
-      return user;
+  // ((callback) => {
+  //   callback(chatdata);
+  // })(handler);
+
+  const chatlist = user.friend.filter((userlist) => {
+    if (friendlist === "") {
+      return userlist;
     }
-    
-    if (user.name.toLowerCase().includes(search.toLowerCase())) {
-      return user;
+    if (userlist.name.toLowerCase().includes(friendlist.toLowerCase())) {
+      return userlist;
     } else {
       return console.log("not found");
     }
-    });
-  
+  });
 
+  const userlist = data.filter((userlist) => {
+    if (user.name === userlist.name) {
+      return 0;
+    } else if (search === "") {
+      return 0;
+    }
+
+    if (userlist.name.toLowerCase().includes(search.toLowerCase())) {
+      return userlist;
+    } else {
+      return console.log("not found");
+    }
+  });
+  const addFriend = async (friend) => {
+    await axios
+      .post("http://localhost:5000/addfriend", {
+        friend,
+        user,
+      })
+      .then((res) => console.log(res.data));
+  };
 
   return (
     <div id="frame">
@@ -45,7 +117,7 @@ const Homepage = ({ setLoginUser, user }) => {
               className="online"
               alt=""
             />
-            <p>{user}</p>
+            <h2 style={{ textTransform: "capitalize" }}>{user.name}</h2>
             <i
               className="fa fa-chevron-down expand-button"
               aria-hidden="true"
@@ -89,9 +161,11 @@ const Homepage = ({ setLoginUser, user }) => {
           <input
             type="text"
             placeholder="Search contacts..."
-            value={search}
+            value={friendlist}
             name="contact"
-            onChange={searchHandler}
+            onChange={(e) => {
+              setFriendList(e.target.value);
+            }}
           />
         </div>
         <div id="contacts">
@@ -106,7 +180,7 @@ const Homepage = ({ setLoginUser, user }) => {
                 </div>
               </div>
             </li>
-            {userlist.map((friend, index) => {
+            {chatlist.map((friend, index) => {
               return (
                 <li className="contact" key={index}>
                   <div className="wrap">
@@ -121,9 +195,13 @@ const Homepage = ({ setLoginUser, user }) => {
           </ul>
         </div>
         <div id="bottom-bar">
-          <button id="addcontact">
-            <i className="fa fa-user-plus fa-fw" aria-hidden="true"></i>{" "}
-            <span>Add contact</span>
+          <button
+            id="addcontact"
+            onClick={() => {
+              Navigate("/resetpassword");
+            }}
+          >
+            <span>Reset Password</span>
           </button>
           <button id="settings">
             <i className="fa fa-cog fa-fw" aria-hidden="true"></i>{" "}
@@ -133,12 +211,75 @@ const Homepage = ({ setLoginUser, user }) => {
       </div>
       <div className="content">
         <div className="contact-profile">
-          <img src="http://emilcarlsson.se/assets/harveyspecter.png" alt="" />
-          <p>Harvey Specter</p>
-          <div className="social-media">
-            <i className="fa fa-facebook" aria-hidden="true"></i>
-            <i className="fa fa-twitter" aria-hidden="true"></i>
-            <i className="fa fa-instagram" aria-hidden="true"></i>
+          <h2 style={{ textTransform: "capitalize" }}>{user.name}</h2>
+          <div
+            style={{
+              position: "relative",
+              width: "270px",
+              height: "300px",
+              overflowY: "scroll",
+            }}
+          >
+            <div
+              id="search"
+              style={{
+                display: "flex",
+                width: "100%",
+                height: "40px",
+                flexDirection: "column",
+                position: "relative",
+                top: 10,
+                right: 0,
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Search contacts..."
+                value={search}
+                name="contact"
+                style={{
+                  outline: "none",
+                  border: "none",
+                  borderRadius: "5px",
+                  height: "20px",
+                  width: "95%",
+                }}
+                onChange={searchHandler}
+              />
+            </div>
+
+            <ul style={{ width: "100%", padding: 0, margin: 0 }}>
+              {userlist.map((friend, index) => {
+                return (
+                  <li
+                    className="contact"
+                    key={index}
+                    style={{
+                      listStyle: "none",
+                      width: "97%",
+                      textTransform: "capitalize",
+                      backgroundColor: "#fff",
+                      paddingLeft: "5px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span>{friend.name}</span>
+                    <span
+                      style={{
+                        padding: " 0rem 1.2rem",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        addFriend(friend);
+                      }}
+                    >
+                      <i class="fa-solid fa-plus"></i>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
         <div className="messages">

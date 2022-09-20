@@ -9,6 +9,8 @@ const SignUp = () => {
   const [user, setUser] = useState({
     name: "",
     email: "",
+    password: "",
+    reEnterPassword: "",
   });
 
   const handleChange = (e) => {
@@ -20,13 +22,15 @@ const SignUp = () => {
   };
 
   const signup = () => {
-    const { name, email } = user;
-    if (name && email) {
+    const { name, email, password, reEnterPassword } = user;
+    if (name && email && password && password === reEnterPassword) {
       axios.post("http://localhost:5000/signup", user).then((res) => {
         alert(res.data.message);
         navigate("/login");
       });
-    } else alert("invalid input");
+    } else {
+      alert("invalid input");
+    }
   };
 
   return (
@@ -47,7 +51,21 @@ const SignUp = () => {
         placeholder="Your Email"
         onChange={handleChange}
       />
-      
+      <input
+        type="password"
+        name="password"
+        value={user.password}
+        placeholder="Your Password"
+        onChange={handleChange}
+      />
+      <input
+        type="password"
+        name="reEnterPassword"
+        value={user.reEnterPassword}
+        placeholder="Re-enter Password"
+        onChange={handleChange}
+      />
+
       <div className="button" onClick={signup}>
         Signup
       </div>

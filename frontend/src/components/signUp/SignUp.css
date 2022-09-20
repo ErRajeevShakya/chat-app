@@ -1,8 +1,10 @@
 .signup {
-  width: 400px;
+  width: 30vw;
   /* background: #fff; */
   border: 1px solid #dddfe2;
-  
+  position: fixed;
+  top:33vh;
+  left:33vw;
   border-radius: 8px;
   padding: 1rem;
   align-items: center;
