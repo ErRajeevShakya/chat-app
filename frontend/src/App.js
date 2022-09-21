@@ -7,11 +7,14 @@ import SignUp from "./components/signUp/SignUp";
 import ResetPassword from "./components/resetPassword/ResetPassword";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
+import { useCookies } from "react-cookie";
+
 // const Homepage = React.lazy(() => import("./components/homepage/homepage"));
 function App() {
+  const [cookies] = useCookies("token");
   const [user, setLoginUser] = useState({});
-  const [use, setuse] = useState("");
-  console.log(use);
+  console.log(cookies);
+
   return (
     <div className="container-fluid">
       <Router>
@@ -20,8 +23,8 @@ function App() {
             exact
             path="/"
             element={
-              user && user._id ? (
-                <Homepage user={user} setLoginUser={setuse} />
+              cookies && cookies ? (
+                <Homepage user={user} />
               ) : (
                 <Login setLoginUser={setLoginUser} />
               )
@@ -36,7 +39,7 @@ function App() {
             path="/resetpassword"
             element={
               user && user._id ? (
-                <ResetPassword email={user.email} setLoginUser={setuse} />
+                <ResetPassword email={user.email} />
               ) : (
                 <Login setLoginUser={setLoginUser} />
               )

@@ -7,8 +7,7 @@ import { useCookies } from "react-cookie";
 const Login = ({ setLoginUser }) => {
   const navigate = useNavigate();
 
-  const [cookies, setCookie] = useCookies();
-  console.log(cookies);
+  const [cookies, setCookie] = useCookies("token");
 
   const [user, setUser] = useState({
     email: "",
@@ -21,9 +20,30 @@ const Login = ({ setLoginUser }) => {
       ...user,
       [name]: value,
     });
-    console.log(user);
   };
   useEffect(() => {}, []);
+
+  // useEffect(() => {
+  //   axios.post("http://localhost:5000/login", user).then((res) => {
+  //     setLoginUser(res.data.user);
+  //     settoken(res.data);
+  //   });
+  // }, []);
+
+  // const login = () => {
+  //   if (user.email !== "" && user.password !== "") {
+  //     alert(tokendata.message);
+  //     console.log(tokendata.token);
+  //     setCookie("token", tokendata.token, {
+  //       path: "/",
+  //       maxAge: 10 * 60,
+  //     });
+
+  //     navigate("/");
+  //   } else {
+  //     alert("please input details");
+  //   }
+  // };
 
   const login = () => {
     if (user.email !== "" && user.password !== "") {
@@ -32,7 +52,7 @@ const Login = ({ setLoginUser }) => {
         console.log(res.data.token);
         setCookie("token", res.data.token, {
           path: "/",
-          maxAge: 60,
+          maxAge: 10 * 60,
         });
         setLoginUser(res.data.user);
         navigate("/");

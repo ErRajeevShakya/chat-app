@@ -2,9 +2,31 @@ import { FloatingLabel } from "react-bootstrap";
 import bcrypt from "bcrypt";
 import User from "../model/userModel.js";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 class userController {
-  static login = (req, res) => {
+  static login = async (req, res) => {
     const { email, password } = req.body;
+
+    // const user = await User.findOne({ email });
+    // if (!user) return res.send({ message: "User not found " })
+    // const valid = await bcrypt.compare(password, user.password);
+
+    // if (valid) {
+    //   const token = jwt.sign(
+    //     {
+    //       email: email,
+    //       userID: user._id,
+    //     },
+    //     `${process.env.JWT_key}${user._id}`
+    //   );
+    //   res.send({
+    //     message: "login Successfully success",
+    //     user,
+    //     token: token,
+    //   });
+    // }
+    // res.send({ message: "password did't match" });
 
     User.findOne({ email: email }, (err, user) => {
       if (user) {
@@ -14,10 +36,9 @@ class userController {
             const token = jwt.sign(
               {
                 email: email,
-                id: user._id,
+                userID: user._id,
               },
-              "rajeevkumar123",
-              { expiresIn: "1h" }
+              `${process.env.JWT_key}${user._id}`
             );
             res.send({
               message: "login Successfully success",
@@ -35,7 +56,7 @@ class userController {
   };
 
   static signup = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { lname, fname, email, password } = req.body;
     const user = await User.findOne({ email: email });
 
     if (user) {
@@ -43,7 +64,8 @@ class userController {
     } else {
       bcrypt.hash(password, 10).then(function (hash) {
         const user = new User({
-          name,
+          fname,
+          lname,
           email,
           password: hash,
         });
@@ -97,15 +119,10 @@ class userController {
   };
 
   static chatList = async (req, res) => {
-    let email = req.params;
+    let { email } = req.params;
     console.log(email);
     const data = await User.findOne({ email: email });
-    console.log(data);
-    if (data) {
-      res.send({ data: data });
-    } else {
-      res.send({ message: "not found!" });
-    }
+    res.send(data);
   };
 
   static resetPassword = async (req, res) => {
@@ -113,16 +130,32 @@ class userController {
     let data = await User.findOne({ email: req.params.email });
     console.log(req.body);
     console.log(data);
-    if (data.password == req.body.old) {
-      data.password = req.body.newP;
-      console.log(data.password);
-      console.log(data);
-      let update = await User.updateOne({ email: req.params.email }, data);
+    bcrypt.compare(req.body.old, data.password, function (err, result) {
+      if (result) {
+        bcrypt.hash(req.body.newP, 10).then(async function (hash) {
+          data.password = hash;
 
-      res.send("password updated successfuly");
-    } else {
-      res.send("wrong old password");
-    }
+          await User.updateOne({ email: req.params.email }, data);
+
+          res.send("password updated successfuly");
+        });
+      } else {
+        res.send("wrong old password");
+      }
+    });
+  };
+
+  static editdetail = async (req, res) => {
+    const { lname, fname } = req.body.changes;
+    console.log(req.body);
+    console.log(req.body.id, lname, fname);
+
+    const user = await User.updateOne(
+      { _id: req.body.id },
+      { $set: { lname: lname, fname: fname } }
+    );
+    console.log(user);
+    res.send("edit api");
   };
 }
 

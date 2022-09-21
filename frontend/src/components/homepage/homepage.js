@@ -3,35 +3,19 @@ import React, { useEffect, useState } from "react";
 import "./homepage.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Button from "react-bootstrap/Button";
+import Modal from "react-bootstrap/Modal";
+import Form from "react-bootstrap/Form";
 
-const Homepage = ({ setLoginUser, user }) => {
+const Homepage = ({ user }) => {
   const Navigate = useNavigate();
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
   const searchHandler = (e) => {
-    console.log(search);
     setSearch(e.target.value);
   };
 
   //user contlist search api calling
-
-  let [chatdata, setChatData] = useState({});
-
-  const ChatDataList = async () => {
-    try {
-      await axios
-        .get(`http://localhost:5000/chatlist/${user.email}`)
-        .then((res) => {
-          console.log(res.data.data);
-          setChatData(res.data.data);
-        })
-        .catch((err) => console.log(err));
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  //friend search api calling
 
   const data1 = async () => {
     try {
@@ -46,38 +30,22 @@ const Homepage = ({ setLoginUser, user }) => {
     }
   };
   useEffect(() => {
-    ChatDataList();
     data1();
   }, []);
 
   console.log(user);
-  console.log(chatdata);
 
   const [friendlist, setFriendList] = useState("");
-  // let chatlist = [];
 
-  // const handler = (chatdata) => {
-  //   chatlist = chatdata.friend.filter((userlist) => {
-  //     if (friendlist === "") {
-  //       return userlist;
-  //     }
-  //     if (userlist.name.toLowerCase().includes(friendlist.toLowerCase())) {
-  //       return userlist;
-  //     } else {
-  //       return console.log("not found");
-  //     }
-  //   });
-  // };
-
-  // ((callback) => {
-  //   callback(chatdata);
-  // })(handler);
-
-  const chatlist = user.friend.filter((userlist) => {
+  const chatlist = user?.friend.filter((userlist) => {
     if (friendlist === "") {
       return userlist;
     }
-    if (userlist.name.toLowerCase().includes(friendlist.toLowerCase())) {
+    if (
+      `${userlist.fname} ${userlist.lname}`
+        .toLowerCase()
+        .includes(friendlist.toLowerCase())
+    ) {
       return userlist;
     } else {
       return console.log("not found");
@@ -85,13 +53,19 @@ const Homepage = ({ setLoginUser, user }) => {
   });
 
   const userlist = data.filter((userlist) => {
-    if (user.name === userlist.name) {
+    if (
+      `${user.fname} ${user.lname}` === `${userlist.fname} ${userlist.lname}`
+    ) {
       return 0;
     } else if (search === "") {
       return 0;
     }
 
-    if (userlist.name.toLowerCase().includes(search.toLowerCase())) {
+    if (
+      `${userlist.fname} ${userlist.lname}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    ) {
       return userlist;
     } else {
       return console.log("not found");
@@ -106,54 +80,95 @@ const Homepage = ({ setLoginUser, user }) => {
       .then((res) => console.log(res.data));
   };
 
+  // model
+  const [show, setShow] = useState(false);
+
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+  const [changes, setchanges] = useState({
+    lname: `${user.lname}`,
+    fname: `${user.fname}`,
+  });
+  const handleCloseAndChanges = async () => {
+    await axios
+      .post("http://localhost:5000/editdetail", { changes, id: user._id })
+      .then((res) => {
+        alert(res.data);
+      });
+
+    setShow(false);
+  };
+
   return (
     <div id="frame">
       <div id="sidepanel">
         <div id="profile">
-          <div className="wrap">
-            <img
-              id="profile-img"
-              src="http://emilcarlsson.se/assets/mikeross.png"
-              className="online"
-              alt=""
-            />
-            <h2 style={{ textTransform: "capitalize" }}>{user.name}</h2>
-            <i
-              className="fa fa-chevron-down expand-button"
-              aria-hidden="true"
-            ></i>
-            <div id="status-options">
-              <ul>
-                <li id="status-online" className="active">
-                  <span className="status-circle"></span> <p>Online</p>
-                </li>
-                <li id="status-away">
-                  <span className="status-circle"></span> <p>Away</p>
-                </li>
-                <li id="status-busy">
-                  <span className="status-circle"></span> <p>Busy</p>
-                </li>
-                <li id="status-offline">
-                  <span className="status-circle"></span> <p>Offline</p>
-                </li>
-              </ul>
-            </div>
-            <div id="expanded">
-              <label for="twitter">
-                <i className="fa fa-facebook fa-fw" aria-hidden="true"></i>
-              </label>
-              <input name="twitter" type="text" value="mikeross" />
-              <label for="twitter">
-                <i className="fa fa-twitter fa-fw" aria-hidden="true"></i>
-              </label>
-              <input name="twitter" type="text" value="ross81" />
-              <label for="twitter">
-                <i className="fa fa-instagram fa-fw" aria-hidden="true"></i>
-              </label>
-              <input name="twitter" type="text" value="mike.ross" />
-            </div>
+          <div className="wrap" style={{ position: "relative", top: "10px" }}>
+            <Button
+              variant="secondary"
+              onClick={handleShow}
+              style={{
+                backgroundColor: "rgba(0,0,0,0)",
+                border: "none",
+                outline: "none",
+              }}
+            >
+              <h5
+                style={{
+                  textTransform: "capitalize",
+                }}
+              >
+                <img
+                  id="profile-img"
+                  src="http://emilcarlsson.se/assets/mikeross.png"
+                  className="online"
+                  alt=""
+                  style={{ position: "relative", top: "-9px", left: "-10px" }}
+                />
+                {`${user.fname} ${user.lname}`}
+              </h5>
+            </Button>
           </div>
         </div>
+        <Modal
+          style={{ position: "absolute" }}
+          show={show}
+          onHide={handleClose}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Edit Your Detail</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form.Label htmlFor="fristname">First Name</Form.Label>
+            <Form.Control
+              type="text"
+              id="fristname"
+              name="fname"
+              value={changes.fname}
+              onChange={(e) =>
+                setchanges({ ...changes, [e.target.name]: e.target.value })
+              }
+            />
+            <Form.Label htmlFor="lastname">Last Name</Form.Label>
+            <Form.Control
+              type="text"
+              id="lastname"
+              name="lname"
+              value={changes.lname}
+              onChange={(e) =>
+                setchanges({ ...changes, [e.target.name]: e.target.value })
+              }
+            />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleClose}>
+              Close
+            </Button>
+            <Button variant="primary" onClick={handleCloseAndChanges}>
+              Save Changes
+            </Button>
+          </Modal.Footer>
+        </Modal>
         <div id="search">
           <label for="">
             <i className="fa fa-search" aria-hidden="true"></i>
@@ -185,7 +200,7 @@ const Homepage = ({ setLoginUser, user }) => {
                 <li className="contact" key={index}>
                   <div className="wrap">
                     <div className="meta">
-                      <p className="name">{friend.name}</p>
+                      <p className="name">{`${friend.fname} ${friend.lname}`}</p>
                       <p className="preview"> {friend.email}</p>
                     </div>
                   </div>
@@ -211,7 +226,9 @@ const Homepage = ({ setLoginUser, user }) => {
       </div>
       <div className="content">
         <div className="contact-profile">
-          <h2 style={{ textTransform: "capitalize" }}>{user.name}</h2>
+          <h2
+            style={{ textTransform: "capitalize" }}
+          >{`${user.fname} ${user.lname}`}</h2>
           <div
             style={{
               position: "relative",
@@ -264,7 +281,7 @@ const Homepage = ({ setLoginUser, user }) => {
                       justifyContent: "space-between",
                     }}
                   >
-                    <span>{friend.name}</span>
+                    <span>{`${friend.fname} ${friend.lname}`}</span>
                     <span
                       style={{
                         padding: " 0rem 1.2rem",

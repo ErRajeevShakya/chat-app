@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import "./ResetPassword.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+
+import { useCookies } from "react-cookie";
 const ResetPassword = ({ email }) => {
   console.log(email);
   const navigate = useNavigate();
@@ -11,6 +13,8 @@ const ResetPassword = ({ email }) => {
     conf: "",
   });
 
+  const [cookies, setCookie] = useCookies("token");
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setPassword({
@@ -18,15 +22,35 @@ const ResetPassword = ({ email }) => {
       [name]: value,
     });
   };
+
+  // let config = {
+  //   headers: {
+  //     'Authorization': 'Bearer ' + validToken()
+  //   }
+  // }
+  // Axios.post(
+  //     'http://localhost:8000/api/v1/get_token_payloads',
+  //     config
+  //   )
+  //   .then( ( response ) => {
+  //     console.log( response )
+  //   } )
+  //   .catch()
+  console.log(cookies.token);
+
   const changePassword = () => {
     const { old, newP, conf } = passwords;
     if (old && newP === conf) {
       axios
-        .post(`http://localhost:5000/resetpassword/${email}`, passwords)
+        .post(`http://localhost:5000/resetpassword/${email}`, passwords, {
+          headers: {
+            Authorization: "Bearer " + cookies.token,
+          },
+        })
         .then((res) => {
           alert(res.data);
-          navigate("/login");
         });
+      navigate("/home");
     } else {
       alert("invalid input");
     }
@@ -56,7 +80,15 @@ const ResetPassword = ({ email }) => {
         onChange={handleChange}
       />
       <div className="button" onClick={changePassword}>
-        Reset password
+        change password
+      </div>
+      <div
+        className="button"
+        onClick={() => {
+          navigate("/login");
+        }}
+      >
+        Login
       </div>
     </div>
   );

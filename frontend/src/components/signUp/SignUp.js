@@ -7,7 +7,8 @@ const SignUp = () => {
   const navigate = useNavigate();
 
   const [user, setUser] = useState({
-    name: "",
+    fname: "",
+    lname: "",
     email: "",
     password: "",
     reEnterPassword: "",
@@ -22,10 +23,12 @@ const SignUp = () => {
   };
 
   const signup = () => {
-    const { name, email, password, reEnterPassword } = user;
-    if (name && email && password && password === reEnterPassword) {
+    console.log(user);
+    const { fname, lname, email, password, reEnterPassword } = user;
+    if (fname && lname && email && password && password === reEnterPassword) {
       axios.post("http://localhost:5000/signup", user).then((res) => {
         alert(res.data.message);
+        console.log(res.data.message);
         navigate("/login");
       });
     } else {
@@ -39,9 +42,16 @@ const SignUp = () => {
       <h1>SignUp</h1>
       <input
         type="text"
-        name="name"
-        value={user.name}
-        placeholder="Your Name"
+        name="fname"
+        value={user.fname}
+        placeholder="first Name"
+        onChange={handleChange}
+      />
+      <input
+        type="text"
+        name="lname"
+        value={user.lname}
+        placeholder="last Name"
         onChange={handleChange}
       />
       <input
