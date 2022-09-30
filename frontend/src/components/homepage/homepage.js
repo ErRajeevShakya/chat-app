@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./homepage.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -7,20 +7,45 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 
-const Homepage = ({ user }) => {
+import { io } from "socket.io-client";
+
+import { useSelector, useDispatch } from "react-redux";
+import { setLoggedUser } from "../../store/UserSlice";
+
+const Homepage = () => {
+  const user = useSelector((state) => state.user.user);
   const Navigate = useNavigate();
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
+  const [active, setActive] = useState("");
+  // const socket = useRef();
+  const scrollRef = useRef();
+
+  const socket = io("http://localhost:5000", { transports: ["websocket"] });
+  // socket.on("connection", (anotherSocketId, msg) => {
+  //   // console.log(msg, "msgmsgmsgmsgmsgmsgmsgmsg");
+  // socket.emit("send", "heeeeiieieijr");
+  // socket.emit("connection", "slkdjflksjdflkj");
+  // });
   const searchHandler = (e) => {
     setSearch(e.target.value);
   };
+  const [sendMessages, setsendMessages] = useState("");
 
-  //user contlist search api calling
+  const [messages, setMessages] = useState([]);
+  const [conversation, setConversation] = useState([]);
+
+  const token = localStorage.getItem("token");
+
+  socket.on("message", (msg) => {
+    setMessages([msg]);
+  });
+  const dispatch = useDispatch();
 
   const data1 = async () => {
     try {
       await axios
-        .get("http://localhost:5000/chatpage")
+        .get("http://localhost:5000/Allusers")
         .then((res) => {
           setData(res.data);
         })
@@ -29,18 +54,20 @@ const Homepage = ({ user }) => {
       console.log(err);
     }
   };
-  useEffect(() => {
-    data1();
-  }, []);
-
-  console.log(user);
 
   const [friendlist, setFriendList] = useState("");
 
-  const chatlist = user?.friend.filter((userlist) => {
-    if (friendlist === "") {
-      return userlist;
+  const [chatlist, setchatlist] = useState([]);
+
+  const usedChatlist = chatlist.filter((userlist) => {
+    if (
+      `${user.fname} ${user.lname}` === `${userlist.fname} ${userlist.lname}`
+    ) {
+      return 0;
+    } else if (friendlist === "") {
+      return 1;
     }
+
     if (
       `${userlist.fname} ${userlist.lname}`
         .toLowerCase()
@@ -71,16 +98,7 @@ const Homepage = ({ user }) => {
       return console.log("not found");
     }
   });
-  const addFriend = async (friend) => {
-    await axios
-      .post("http://localhost:5000/addfriend", {
-        friend,
-        user,
-      })
-      .then((res) => console.log(res.data));
-  };
 
-  // model
   const [show, setShow] = useState(false);
 
   const handleClose = () => setShow(false);
@@ -98,6 +116,126 @@ const Homepage = ({ user }) => {
 
     setShow(false);
   };
+  const addFriend = async (id) => {
+    console.log(id);
+    await axios
+      .post(
+        "http://localhost:5000/makingChatConnection",
+        {
+          fid: id,
+        },
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      )
+      .then((res) => console.log(res.data));
+  };
+  const messageConnection = async (receiverId) => {
+    const messageC = await axios.post(
+      "http://localhost:5000/messageconnection",
+      { receiverId: receiverId },
+      {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      }
+    );
+    console.log(messageC);
+  };
+
+  const sendMessage = async (receiverId, messages) => {
+    if (receiverId && conversation._id && messages) {
+      await axios.post(
+        "http://localhost:5000/messagessend",
+        { receiverId, messages, chatConnectionId: conversation._id },
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
+    } else {
+      console.log("some technecal issues");
+    }
+    setsendMessages("");
+  };
+
+  let messageslist = messages?.map((value, index) => {
+    if (value.senderId === user._id) {
+      return (
+        <li className="replies" key={index}>
+          <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
+          <p>{value.messages}</p>
+        </li>
+      );
+    } else {
+      return (
+        <li className="sent" key={index}>
+          <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
+          <p>{value.messages}</p>
+        </li>
+      );
+    }
+  });
+
+  useEffect(() => {
+    const getMessages = async () => {
+      if (active) {
+        try {
+          const response = await axios.get(
+            `http://localhost:5000/messagesget/${active._id}`,
+            {
+              headers: {
+                Authorization: "Bearer " + token,
+              },
+            }
+          );
+          console.log(response.data);
+          setMessages(response.data);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    };
+    getMessages();
+  }, [active]);
+
+  const resConversation = async (friend) => {
+    const response = await axios.get(
+      `http://localhost:5000/conversationid/${friend._id}`,
+      {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      }
+    );
+    console.log(response.data);
+    setConversation(response.data);
+  };
+
+  useEffect(() => {
+    data1();
+    (async () => {
+      const response = await axios.get("http://localhost:5000/loggeduser", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+      dispatch(setLoggedUser(response.data));
+    })();
+
+    let response;
+    (async () => {
+      response = await axios.get("http://localhost:5000/showingChatList", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+      setchatlist(response.data);
+    })();
+  }, []);
 
   return (
     <div id="frame">
@@ -170,7 +308,7 @@ const Homepage = ({ user }) => {
           </Modal.Footer>
         </Modal>
         <div id="search">
-          <label for="">
+          <label htmlFor="">
             <i className="fa fa-search" aria-hidden="true"></i>
           </label>
           <input
@@ -195,13 +333,25 @@ const Homepage = ({ user }) => {
                 </div>
               </div>
             </li>
-            {chatlist.map((friend, index) => {
+            {usedChatlist?.map?.((friend, index) => {
               return (
-                <li className="contact" key={index}>
+                <li
+                  className="contact"
+                  style={{
+                    listStyle: "none",
+                    textTransform: "capitalize",
+                  }}
+                  key={index}
+                  onClick={() => {
+                    messageConnection(friend._id);
+                    setActive(friend);
+                    resConversation(friend);
+                  }}
+                >
                   <div className="wrap">
                     <div className="meta">
                       <p className="name">{`${friend.fname} ${friend.lname}`}</p>
-                      <p className="preview"> {friend.email}</p>
+                      <span> {friend.email}</span>
                     </div>
                   </div>
                 </li>
@@ -218,17 +368,24 @@ const Homepage = ({ user }) => {
           >
             <span>Reset Password</span>
           </button>
-          <button id="settings">
+          <button
+            id="settings"
+            onClick={() => {
+              localStorage.removeItem("token");
+              Navigate("/");
+              window.location.reload();
+            }}
+          >
             <i className="fa fa-cog fa-fw" aria-hidden="true"></i>{" "}
-            <span>Settings</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>
       <div className="content">
         <div className="contact-profile">
-          <h2
-            style={{ textTransform: "capitalize" }}
-          >{`${user.fname} ${user.lname}`}</h2>
+          <h2 style={{ textTransform: "capitalize" }}>
+            {active ? `${active.fname} ${active.lname}` : ""}
+          </h2>
           <div
             style={{
               position: "relative",
@@ -288,10 +445,10 @@ const Homepage = ({ user }) => {
                         cursor: "pointer",
                       }}
                       onClick={() => {
-                        addFriend(friend);
+                        addFriend(friend._id);
                       }}
                     >
-                      <i class="fa-solid fa-plus"></i>
+                      <i className="fa-solid fa-plus"></i>
                     </span>
                   </li>
                 );
@@ -300,7 +457,7 @@ const Homepage = ({ user }) => {
           </div>
         </div>
         <div className="messages">
-          <ul>
+          <ul ref={scrollRef}>
             <li className="sent">
               <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
               <p>
@@ -318,56 +475,27 @@ const Homepage = ({ user }) => {
                 down.
               </p>
             </li>
-            <li className="replies">
-              <img
-                src="http://emilcarlsson.se/assets/harveyspecter.png"
-                alt=""
-              />
-              <p>Excuses don't win championships.</p>
-            </li>
-            <li className="sent">
-              <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
-              <p>Oh yeah, did Michael Jordan tell you that?</p>
-            </li>
-            <li className="replies">
-              <img
-                src="http://emilcarlsson.se/assets/harveyspecter.png"
-                alt=""
-              />
-              <p>No, I told him that.</p>
-            </li>
-            <li className="replies">
-              <img
-                src="http://emilcarlsson.se/assets/harveyspecter.png"
-                alt=""
-              />
-              <p>What are your choices when someone puts a gun to your head?</p>
-            </li>
-            <li className="sent">
-              <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
-              <p>
-                What are you talking about? You do what they say or they shoot
-                you.
-              </p>
-            </li>
-            <li className="replies">
-              <img
-                src="http://emilcarlsson.se/assets/harveyspecter.png"
-                alt=""
-              />
-              <p>
-                Wrong. You take the gun, or you pull out a bigger one. Or, you
-                call their bluff. Or, you do any one of a hundred and forty six
-                other things.
-              </p>
-            </li>
+            {messageslist}
           </ul>
         </div>
         <div className="message-input">
           <div className="wrap">
-            <input type="text" placeholder="Write your message..." />
+            <input
+              type="text"
+              placeholder="Write your message..."
+              value={sendMessages}
+              onChange={(e) => setsendMessages(e.target.value)}
+            />
             <i className="fa fa-paperclip attachment" aria-hidden="true"></i>
-            <button className="submit">
+            <button
+              className="submit"
+              onClick={(e) => {
+                socket.emit("send", sendMessages);
+
+                // sendMessage(active._id, sendMessages);
+                setsendMessages("");
+              }}
+            >
               <i className="fa fa-paper-plane" aria-hidden="true"></i>
             </button>
           </div>

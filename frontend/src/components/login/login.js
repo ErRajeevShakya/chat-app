@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import "./login.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { useCookies } from "react-cookie";
 
-const Login = ({ setLoginUser }) => {
+import { useSelector } from "react-redux";
+
+const Login = ({ tokendata }) => {
+  const token1 = localStorage.getItem("token");
   const navigate = useNavigate();
-
-  const [cookies, setCookie] = useCookies("token");
+  const token = useSelector((state) => state.user.user);
+  console.log(token);
 
   const [user, setUser] = useState({
     email: "",
@@ -21,47 +23,21 @@ const Login = ({ setLoginUser }) => {
       [name]: value,
     });
   };
-  useEffect(() => {}, []);
-
-  // useEffect(() => {
-  //   axios.post("http://localhost:5000/login", user).then((res) => {
-  //     setLoginUser(res.data.user);
-  //     settoken(res.data);
-  //   });
-  // }, []);
-
-  // const login = () => {
-  //   if (user.email !== "" && user.password !== "") {
-  //     alert(tokendata.message);
-  //     console.log(tokendata.token);
-  //     setCookie("token", tokendata.token, {
-  //       path: "/",
-  //       maxAge: 10 * 60,
-  //     });
-
-  //     navigate("/");
-  //   } else {
-  //     alert("please input details");
-  //   }
-  // };
 
   const login = () => {
     if (user.email !== "" && user.password !== "") {
       axios.post("http://localhost:5000/login", user).then((res) => {
         alert(res.data.message);
-        console.log(res.data.token);
-        setCookie("token", res.data.token, {
-          path: "/",
-          maxAge: 10 * 60,
-        });
-        setLoginUser(res.data.user);
+        localStorage.setItem("token", res.data.token);
+
         navigate("/");
+
+        window.location.reload();
       });
     } else {
       alert("please input details");
     }
   };
-  console.log(cookies.token);
 
   return (
     <div className="login">

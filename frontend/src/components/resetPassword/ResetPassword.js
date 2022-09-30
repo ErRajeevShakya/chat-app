@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./ResetPassword.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-import { useCookies } from "react-cookie";
-const ResetPassword = ({ email }) => {
+const ResetPassword = () => {
+  const email = useSelector((state) => state.user?.user?.email);
   console.log(email);
   const navigate = useNavigate();
   const [passwords, setPassword] = useState({
@@ -13,7 +14,7 @@ const ResetPassword = ({ email }) => {
     conf: "",
   });
 
-  const [cookies, setCookie] = useCookies("token");
+  const token = localStorage.getItem("token");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,20 +24,7 @@ const ResetPassword = ({ email }) => {
     });
   };
 
-  // let config = {
-  //   headers: {
-  //     'Authorization': 'Bearer ' + validToken()
-  //   }
-  // }
-  // Axios.post(
-  //     'http://localhost:8000/api/v1/get_token_payloads',
-  //     config
-  //   )
-  //   .then( ( response ) => {
-  //     console.log( response )
-  //   } )
-  //   .catch()
-  console.log(cookies.token);
+  console.log(token);
 
   const changePassword = () => {
     const { old, newP, conf } = passwords;
@@ -44,17 +32,24 @@ const ResetPassword = ({ email }) => {
       axios
         .post(`http://localhost:5000/resetpassword/${email}`, passwords, {
           headers: {
-            Authorization: "Bearer " + cookies.token,
+            Authorization: "Bearer " + token,
           },
         })
         .then((res) => {
           alert(res.data);
         });
-      navigate("/home");
+      navigate("/");
     } else {
       alert("invalid input");
     }
   };
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+    }
+  });
+
   return (
     <div className="change">
       <h1>Reset Password</h1>
@@ -85,7 +80,7 @@ const ResetPassword = ({ email }) => {
       <div
         className="button"
         onClick={() => {
-          navigate("/login");
+          navigate("/");
         }}
       >
         Login

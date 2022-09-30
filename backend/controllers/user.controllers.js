@@ -3,6 +3,10 @@ import bcrypt from "bcrypt";
 import User from "../model/userModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import ChannelModel from "../model/channel.js";
+import { response } from "express";
+import Messages from "../model/messages.js";
+
 dotenv.config();
 class userController {
   static login = async (req, res) => {
@@ -38,7 +42,7 @@ class userController {
                 email: email,
                 userID: user._id,
               },
-              `${process.env.JWT_key}${user._id}`
+              `${process.env.JWT_key}`
             );
             res.send({
               message: "login Successfully success",
@@ -46,7 +50,7 @@ class userController {
               token: token,
             });
           } else {
-            res.send({ message: "password did't match" });
+            res.send({ message: "password did't match", login: false });
           }
         });
       } else {
@@ -54,6 +58,7 @@ class userController {
       }
     });
   };
+  // for signup login
 
   static signup = async (req, res) => {
     const { lname, fname, email, password } = req.body;
@@ -78,20 +83,22 @@ class userController {
         });
       });
     }
-    console.log(req.body);
   };
 
-  static allUsers = async (req, res) => {
+  // for searching all friend
+
+  static Allusers = async (req, res) => {
     const data = await User.find();
     res.send(data);
   };
+
+  // for adding friendlist in array
+
   static addfriend = async (req, res) => {
-    // console.log(req.body);
     const { friend, user } = req.body;
     const { email } = user;
     let flag = true;
 
-    console.log(friend.email, user.friend.length);
     // user.friend.forEach((element) => {
     //   console.log(element.email, friend.email);
     //   if (element.email === friend.email) {
@@ -101,11 +108,10 @@ class userController {
 
     for (let i = 0; i < user.friend.length; i++) {
       if (friend.email == user.friend[i].email) {
-        console.log(friend.email, user.friend[i].email);
         flag = false;
       }
     }
-    console.log(flag);
+
     if (flag) {
       let data = await User.findOne({ email: user.email });
       let arr = data.friend.push(friend);
@@ -118,18 +124,20 @@ class userController {
     }
   };
 
+  // for showing list
+
   static chatList = async (req, res) => {
     let { email } = req.params;
-    console.log(email);
+
     const data = await User.findOne({ email: email });
     res.send(data);
   };
 
+  // for reset password
+
   static resetPassword = async (req, res) => {
-    console.log(req.params);
     let data = await User.findOne({ email: req.params.email });
-    console.log(req.body);
-    console.log(data);
+
     bcrypt.compare(req.body.old, data.password, function (err, result) {
       if (result) {
         bcrypt.hash(req.body.newP, 10).then(async function (hash) {
@@ -145,17 +153,203 @@ class userController {
     });
   };
 
+  // for editing logged user detailing
+
   static editdetail = async (req, res) => {
     const { lname, fname } = req.body.changes;
-    console.log(req.body);
-    console.log(req.body.id, lname, fname);
 
     const user = await User.updateOne(
       { _id: req.body.id },
       { $set: { lname: lname, fname: fname } }
     );
-    console.log(user);
+
     res.send("edit api");
+  };
+
+  // getting logged user
+
+  static loggeduser = async (req, res) => {
+    res.send(req.user);
+  };
+
+  // for making chat connection
+
+  static makingChatConnection = async (req, res) => {
+    const id = req.user._id;
+    const id2 = req.body.fid;
+
+    const channelConnection = await ChannelModel.findOne({
+      $or: [
+        { user1: id, user2: id2 },
+        { user1: id2, user2: id },
+      ],
+    });
+
+    if (!channelConnection) {
+      const newadd = new ChannelModel({ user1: id, user2: id2 });
+      await newadd.save();
+      res.send("api is working");
+    } else {
+      res.send("allready in friend list");
+    }
+  };
+
+  //for showing friend list
+
+  static showingChatList = async (req, res) => {
+    const id = req.user._id;
+    // const connectionlist = await ChannelModel.find({
+    //   $or: [{ user1: id }, { user2: id }],
+    // });
+    // console.log(connectionlist);
+    // res.status(200).send(connectionlist);
+    // console.log(reqSend[0].user2, reqSend.length);
+    // if (chatlist.indexOf(reqSend[i].user2 >= 0)) {
+    // } else {
+    //   chatlist.push(reqSend[i].user2);
+    // }
+    // if (chatlist.indexOf(reqRecieved[i].user1 >= 0)) {
+    // } else {
+    //   chatlist.push(reqRecieved[i].user1);
+    // }
+    const reqSend = await ChannelModel.find({ user1: id }).populate("user2");
+    // .select("user2 -_id");
+    const reqRecieved = await ChannelModel.find({ user2: id }).populate(
+      "user1"
+    );
+    // .select("user1 -_id");
+
+    const chatlist = [];
+    // console.log(reqSend, 3242345, reqRecieved);
+
+    for (let i = 0; i < reqSend.length; i++) {
+      chatlist.push(reqSend[i].user2);
+    }
+    for (let i = 0; i < reqRecieved.length; i++) {
+      chatlist.push(reqRecieved[i].user1);
+    }
+    res.send(chatlist);
+  };
+
+  // for making message connection
+
+  static messageConnection = async (req, res) => {
+    const senderId = req.user._id;
+    const receiverId = req.body.receiverId;
+
+    const channelConnection = await ChannelModel.findOne({
+      $or: [
+        { user1: senderId, user2: receiverId },
+        { user1: receiverId, user2: senderId },
+      ],
+    });
+
+    let messageconnection = await Messages.findOne({
+      senderId: senderId,
+      receiverId: receiverId,
+    });
+
+    if (messageconnection) {
+      res.send(messageconnection);
+    } else {
+      messageconnection = await new Messages({
+        senderId: senderId,
+        receiverId: receiverId,
+        chatConnectionId: channelConnection._id,
+      }).save();
+      res.send(messageconnection);
+    }
+  };
+
+  // finding conversation id
+  static conversationId = async (req, res) => {
+    const senderId = req.user._id;
+    const receiverId = req.params.receiverId;
+
+    try {
+      const conversation = await ChannelModel.findOne({
+        $or: [
+          { user1: senderId, user2: receiverId },
+          { user1: receiverId, user2: senderId },
+        ],
+      });
+      res.status(200).send(conversation);
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  };
+  // for sending messages
+
+  static messagessend = async (req, res) => {
+    const senderId = req.user._id;
+    const receiverId = req.body.receiverId;
+    const chatConnectionId = req.body.chatConnectionId;
+    const messages = req.body.messages;
+
+    // const channelConnection = await ChannelModel.findOne({
+    //   $or: [
+    //     { user1: senderId, user2: receiverId },
+    //     { user1: receiverId, user2: senderId },
+    //   ],
+    // });
+
+    if (messages !== "") {
+      const data = new Messages({
+        senderId: senderId,
+        receiverId: receiverId,
+        chatConnectionId: chatConnectionId,
+        messages: messages,
+      });
+
+      await data.save();
+      res.send("send successfuly");
+    } else res.send("empty messages");
+  };
+
+  // for geting messsages
+
+  static messagesget = async (req, res) => {
+    const senderId = req.user._id;
+    const receiverId = req.params.receiverId;
+
+    const getConnectionId = await ChannelModel.findOne({
+      $or: [
+        { user1: senderId, user2: receiverId },
+        { user1: receiverId, user2: senderId },
+      ],
+    });
+
+    const allConversation = await Messages.find({
+      chatConnectionId: getConnectionId._id,
+    });
+
+    // let sendMessages = [];
+    // let receiveMessage = [];
+
+    // for (let i = 0; i < allConversation.length; i++) {
+    //   let msg;
+
+    //   if (
+    //     JSON.stringify(allConversation[i].senderId) == JSON.stringify(senderId)
+    //   ) {
+    //     msg = allConversation[i].messages;
+
+    //     console.log(msg);
+    //     sendMessages.push(msg);
+    //   } else {
+    //     if (
+    //       JSON.stringify(allConversation[i].receiverId) ==
+    //       JSON.stringify(senderId)
+    //     )
+    //       msg = allConversation[i].messages;
+
+    //     receiveMessage.push(msg);
+    //     console.log(msg);
+    //   }
+    // }
+    // res.send({ sendMessages: sendMessages, receiveMessage: receiveMessage });
+
+    res.status(200).send(allConversation);
   };
 }
 

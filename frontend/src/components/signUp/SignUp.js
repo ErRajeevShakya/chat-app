@@ -29,7 +29,7 @@ const SignUp = () => {
       axios.post("http://localhost:5000/signup", user).then((res) => {
         alert(res.data.message);
         console.log(res.data.message);
-        navigate("/login");
+        navigate("/");
       });
     } else {
       alert("invalid input");
@@ -75,12 +75,11 @@ const SignUp = () => {
         placeholder="Re-enter Password"
         onChange={handleChange}
       />
-
       <div className="button" onClick={signup}>
         Signup
       </div>
       <div>or</div>
-      <div className="button" onClick={() => navigate("/login")}>
+      <div className="button" onClick={() => navigate("/")}>
         Login
       </div>
     </div>
