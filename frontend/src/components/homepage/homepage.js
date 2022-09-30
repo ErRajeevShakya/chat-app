@@ -28,6 +28,7 @@ const Homepage = () => {
   // socket.emit("connection", "slkdjflksjdflkj");
   // });
   const searchHandler = (e) => {
+    console.log(search);
     setSearch(e.target.value);
   };
   const [sendMessages, setsendMessages] = useState("");
@@ -268,45 +269,6 @@ const Homepage = () => {
             </Button>
           </div>
         </div>
-        <Modal
-          style={{ position: "absolute" }}
-          show={show}
-          onHide={handleClose}
-        >
-          <Modal.Header closeButton>
-            <Modal.Title>Edit Your Detail</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form.Label htmlFor="fristname">First Name</Form.Label>
-            <Form.Control
-              type="text"
-              id="fristname"
-              name="fname"
-              value={changes.fname}
-              onChange={(e) =>
-                setchanges({ ...changes, [e.target.name]: e.target.value })
-              }
-            />
-            <Form.Label htmlFor="lastname">Last Name</Form.Label>
-            <Form.Control
-              type="text"
-              id="lastname"
-              name="lname"
-              value={changes.lname}
-              onChange={(e) =>
-                setchanges({ ...changes, [e.target.name]: e.target.value })
-              }
-            />
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleClose}>
-              Close
-            </Button>
-            <Button variant="primary" onClick={handleCloseAndChanges}>
-              Save Changes
-            </Button>
-          </Modal.Footer>
-        </Modal>
         <div id="search">
           <label htmlFor="">
             <i className="fa fa-search" aria-hidden="true"></i>
