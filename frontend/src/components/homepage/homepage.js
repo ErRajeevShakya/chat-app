@@ -17,7 +17,6 @@ const Homepage = () => {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
   const [active, setActive] = useState("");
-
   const scrollRef = useRef();
   const scrollBottomRef = useRef(null);
   const socket = io("http://localhost:5000", { transports: ["websocket"] });
@@ -43,6 +42,13 @@ const Homepage = () => {
       console.log(err);
     }
   };
+  // socket.on("getallusers", (allusers) => {
+  //   setData(allusers);
+  // });
+  // socket.emit("getfriendlist", user._id);
+  // socket.on("showingfrindlist", (friendList) => {
+  //   setchatlist(friendList);
+  // });
   const [friendlist, setFriendList] = useState("");
   const [chatlist, setchatlist] = useState([]);
   const usedChatlist = chatlist.filter((userlist) => {
@@ -132,6 +138,13 @@ const Homepage = () => {
   };
 
   const sendMessage = async (receiverId, message) => {
+    console.log(
+      receiverId,
+      active._id,
+      "lkjdflkjsldkfjlsdjfljdlsfjlksdfjlsdkfjlkjflkj",
+      receiverId,
+      conversation._id
+    );
     if (receiverId && conversation._id && message) {
       const msg = {
         senderId: user._id,
@@ -189,11 +202,12 @@ const Homepage = () => {
   }, [active]);
 
   socket.on("receiveMessage", (msg) => {
-    console.log(msg.senderId, active._id, msg);
     console.log(msg.senderId === active._id);
-    if (msg.senderId === active._id) {
-      setMessages([...messages, msg]);
-    }
+    console.log(msg.senderId, active, "dsljfhskjdfhkjsdss");
+
+    // if (msg.senderId === active._id) {
+    setMessages([...messages, msg]);
+    // }
   });
 
   const resConversation = async (friend) => {
@@ -245,7 +259,11 @@ const Homepage = () => {
     const keyDownHandler = (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-
+        console.log(
+          active._id,
+          sendMessages,
+          "active._idactive._idactive._idactive._id"
+        );
         sendMessage(active._id, sendMessages);
       }
     };
@@ -322,6 +340,10 @@ const Homepage = () => {
                   }}
                   key={index}
                   onClick={() => {
+                    console.log(
+                      friend,
+                      "66666666666666666666666666666666666666"
+                    );
                     setActive(friend);
                     messageConnection(friend._id);
                     resConversation(friend);
