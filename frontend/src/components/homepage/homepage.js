@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useRef } from "react";
 import "./homepage.css";
 import axios from "axios";
@@ -18,31 +17,20 @@ const Homepage = () => {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
   const [active, setActive] = useState("");
-  // const socket = useRef();
-  const scrollRef = useRef();
 
+  const scrollRef = useRef();
+  const scrollBottomRef = useRef(null);
   const socket = io("http://localhost:5000", { transports: ["websocket"] });
-  // socket.on("connection", (anotherSocketId, msg) => {
-  //   // console.log(msg, "msgmsgmsgmsgmsgmsgmsgmsg");
-  // socket.emit("send", "heeeeiieieijr");
-  // socket.emit("connection", "slkdjflksjdflkj");
-  // });
+  socket.emit("join-room", user._id);
   const searchHandler = (e) => {
     console.log(search);
     setSearch(e.target.value);
   };
   const [sendMessages, setsendMessages] = useState("");
-
   const [messages, setMessages] = useState([]);
   const [conversation, setConversation] = useState([]);
-
   const token = localStorage.getItem("token");
-
-  socket.on("message", (msg) => {
-    setMessages([msg]);
-  });
   const dispatch = useDispatch();
-
   const data1 = async () => {
     try {
       await axios
@@ -55,11 +43,8 @@ const Homepage = () => {
       console.log(err);
     }
   };
-
   const [friendlist, setFriendList] = useState("");
-
   const [chatlist, setchatlist] = useState([]);
-
   const usedChatlist = chatlist.filter((userlist) => {
     if (
       `${user.fname} ${user.lname}` === `${userlist.fname} ${userlist.lname}`
@@ -146,17 +131,16 @@ const Homepage = () => {
     console.log(messageC);
   };
 
-  const sendMessage = async (receiverId, messages) => {
-    if (receiverId && conversation._id && messages) {
-      await axios.post(
-        "http://localhost:5000/messagessend",
-        { receiverId, messages, chatConnectionId: conversation._id },
-        {
-          headers: {
-            Authorization: "Bearer " + token,
-          },
-        }
-      );
+  const sendMessage = async (receiverId, message) => {
+    if (receiverId && conversation._id && message) {
+      const msg = {
+        senderId: user._id,
+        receiverId,
+        chatConnectionId: conversation._id,
+        messages: message,
+      };
+      setMessages([...messages, msg]);
+      socket.emit("sendMessage", msg);
     } else {
       console.log("some technecal issues");
     }
@@ -169,6 +153,7 @@ const Homepage = () => {
         <li className="replies" key={index}>
           <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
           <p>{value.messages}</p>
+          <div ref={scrollBottomRef}></div>
         </li>
       );
     } else {
@@ -193,7 +178,7 @@ const Homepage = () => {
               },
             }
           );
-          console.log(response.data);
+
           setMessages(response.data);
         } catch (err) {
           console.log(err);
@@ -202,6 +187,14 @@ const Homepage = () => {
     };
     getMessages();
   }, [active]);
+
+  socket.on("receiveMessage", (msg) => {
+    console.log(msg.senderId, active._id, msg);
+    console.log(msg.senderId === active._id);
+    if (msg.senderId === active._id) {
+      setMessages([...messages, msg]);
+    }
+  });
 
   const resConversation = async (friend) => {
     const response = await axios.get(
@@ -214,7 +207,17 @@ const Homepage = () => {
     );
     console.log(response.data);
     setConversation(response.data);
+    // socket.emit("join-room", response.data._id);
+    // socket.on("oldMessage", (oldmessage) => {
+    //   setMessages(oldmessage);
+    // });
   };
+  const RefScrollTop = () => {
+    scrollBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => {
+    RefScrollTop();
+  }, [messages]);
 
   useEffect(() => {
     data1();
@@ -237,6 +240,20 @@ const Homepage = () => {
       setchatlist(response.data);
     })();
   }, []);
+
+  useEffect(() => {
+    const keyDownHandler = (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+
+        sendMessage(active._id, sendMessages);
+      }
+    };
+    document.addEventListener("keydown", keyDownHandler);
+    return () => {
+      document.removeEventListener("keydown", keyDownHandler);
+    };
+  }, [sendMessages]);
 
   return (
     <div id="frame">
@@ -285,7 +302,7 @@ const Homepage = () => {
         </div>
         <div id="contacts">
           <ul>
-            <li className="contact">
+            {/* <li className="contact">
               <div className="wrap">
                 <span className="contact-status online"></span>
                 <img src="http://emilcarlsson.se/assets/louislitt.png" alt="" />
@@ -294,7 +311,7 @@ const Homepage = () => {
                   <p className="preview">You just got LITT up, Mike.</p>
                 </div>
               </div>
-            </li>
+            </li> */}
             {usedChatlist?.map?.((friend, index) => {
               return (
                 <li
@@ -305,9 +322,10 @@ const Homepage = () => {
                   }}
                   key={index}
                   onClick={() => {
-                    messageConnection(friend._id);
                     setActive(friend);
+                    messageConnection(friend._id);
                     resConversation(friend);
+                    // getMessages();
                   }}
                 >
                   <div className="wrap">
@@ -419,24 +437,7 @@ const Homepage = () => {
           </div>
         </div>
         <div className="messages">
-          <ul ref={scrollRef}>
-            <li className="sent">
-              <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
-              <p>
-                How the hell am I supposed to get a jury to believe you when I
-                am not even sure that I do?!
-              </p>
-            </li>
-            <li className="replies">
-              <img
-                src="http://emilcarlsson.se/assets/harveyspecter.png"
-                alt=""
-              />
-              <p>
-                When you're backed against the wall, break the god damn thing
-                down.
-              </p>
-            </li>
+          <ul ref={scrollRef} id="textDom">
             {messageslist}
           </ul>
         </div>
@@ -452,9 +453,8 @@ const Homepage = () => {
             <button
               className="submit"
               onClick={(e) => {
-                socket.emit("send", sendMessages);
-
-                // sendMessage(active._id, sendMessages);
+                e.preventDefault();
+                sendMessage(active._id, sendMessages);
                 setsendMessages("");
               }}
             >
