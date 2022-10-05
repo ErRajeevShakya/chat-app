@@ -1,10 +1,9 @@
-import { FloatingLabel } from "react-bootstrap";
 import bcrypt from "bcrypt";
 import User from "../model/userModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import ChannelModel from "../model/channel.js";
-import { response } from "express";
+
 import Messages from "../model/messages.js";
 
 dotenv.config();
@@ -198,35 +197,28 @@ class userController {
 
   static showingChatList = async (req, res) => {
     const id = req.user._id;
-    // const connectionlist = await ChannelModel.find({
-    //   $or: [{ user1: id }, { user2: id }],
-    // });
-    // console.log(connectionlist);
-    // res.status(200).send(connectionlist);
-    // console.log(reqSend[0].user2, reqSend.length);
-    // if (chatlist.indexOf(reqSend[i].user2 >= 0)) {
-    // } else {
-    //   chatlist.push(reqSend[i].user2);
-    // }
-    // if (chatlist.indexOf(reqRecieved[i].user1 >= 0)) {
-    // } else {
-    //   chatlist.push(reqRecieved[i].user1);
-    // }
-    const reqSend = await ChannelModel.find({ user1: id }).populate("user2");
-    // .select("user2 -_id");
-    const reqRecieved = await ChannelModel.find({ user2: id }).populate(
-      "user1"
-    );
-    // .select("user1 -_id");
+
+    let reqSend = await ChannelModel.find({ user1: id })
+      .populate("user2")
+      .select("-user1");
+    let reqRecieved = await ChannelModel.find({ user2: id })
+      .populate("user1")
+      .select("user1");
 
     const chatlist = [];
-    // console.log(reqSend, 3242345, reqRecieved);
 
     for (let i = 0; i < reqSend.length; i++) {
-      chatlist.push(reqSend[i].user2);
+      let obj = { ...reqSend[i].user2._doc };
+      obj.conversationId = reqSend[i]._id;
+      console.log(obj);
+
+      chatlist.push(obj);
     }
     for (let i = 0; i < reqRecieved.length; i++) {
-      chatlist.push(reqRecieved[i].user1);
+      let obj = { ...reqRecieved[i].user1._doc };
+      obj.conversationId = reqRecieved[i]._id;
+      console.log(obj);
+      chatlist.push(obj);
     }
     res.send(chatlist);
   };

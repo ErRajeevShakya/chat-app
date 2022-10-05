@@ -5,6 +5,7 @@ import Homepage from "./components/homepage/homepage";
 import Login from "./components/login/login";
 import SignUp from "./components/signUp/SignUp";
 import ResetPassword from "./components/resetPassword/ResetPassword";
+import { useSelector, useDispatch } from "react-redux";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 function App() {
   const token = localStorage.getItem("token");
@@ -26,12 +27,16 @@ function App() {
   //     </>
   //   );
   // };
+  const user = useSelector((state) => state.user.user);
 
   return (
     <div className="container-fluid">
       <Router>
         <Routes>
-          <Route path="/" element={token ? <Homepage /> : <Login />} />
+          <Route
+            path="/"
+            element={token ? <Homepage user={user} /> : <Login />}
+          />
 
           <Route path="/signup" element={<SignUp />} />
           <Route

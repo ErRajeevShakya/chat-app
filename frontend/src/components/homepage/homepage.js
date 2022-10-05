@@ -17,38 +17,20 @@ const Homepage = () => {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
   const [active, setActive] = useState("");
+  console.log(active);
   const scrollRef = useRef();
   const scrollBottomRef = useRef(null);
   const socket = io("http://localhost:5000", { transports: ["websocket"] });
-  socket.emit("join-room", user._id);
+  // socket.emit("join-room", user._id);
   const searchHandler = (e) => {
     console.log(search);
     setSearch(e.target.value);
   };
   const [sendMessages, setsendMessages] = useState("");
   const [messages, setMessages] = useState([]);
-  const [conversation, setConversation] = useState([]);
+  // const [conversation, setConversation] = useState([]);
   const token = localStorage.getItem("token");
   const dispatch = useDispatch();
-  const data1 = async () => {
-    try {
-      await axios
-        .get("http://localhost:5000/Allusers")
-        .then((res) => {
-          setData(res.data);
-        })
-        .catch((err) => console.log(err));
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  // socket.on("getallusers", (allusers) => {
-  //   setData(allusers);
-  // });
-  // socket.emit("getfriendlist", user._id);
-  // socket.on("showingfrindlist", (friendList) => {
-  //   setchatlist(friendList);
-  // });
   const [friendlist, setFriendList] = useState("");
   const [chatlist, setchatlist] = useState([]);
   const usedChatlist = chatlist.filter((userlist) => {
@@ -134,25 +116,31 @@ const Homepage = () => {
         },
       }
     );
-    console.log(messageC);
+    // console.log(messageC);
   };
+  socket.on("oldMessage", (oldsmg) => {
+    setMessages(oldsmg);
+  });
 
-  const sendMessage = async (receiverId, message) => {
+  const sendMessage = async (receiverId, conversationId, message) => {
     console.log(
       receiverId,
       active._id,
       "lkjdflkjsldkfjlsdjfljdlsfjlksdfjlsdkfjlkjflkj",
       receiverId,
-      conversation._id
+      conversationId
     );
-    if (receiverId && conversation._id && message) {
-      const msg = {
+    if (receiverId && conversationId && message) {
+      let msg = {
         senderId: user._id,
         receiverId,
-        chatConnectionId: conversation._id,
+        chatConnectionId: conversationId,
         messages: message,
       };
-      setMessages([...messages, msg]);
+      // console.log(msg);
+      // let oldmsg = [...messages, msg];
+      messages.push(msg);
+      setMessages(messages);
       socket.emit("sendMessage", msg);
     } else {
       console.log("some technecal issues");
@@ -160,81 +148,33 @@ const Homepage = () => {
     setsendMessages("");
   };
 
-  let messageslist = messages?.map((value, index) => {
-    if (value.senderId === user._id) {
-      return (
-        <li className="replies" key={index}>
-          <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
-          <p>{value.messages}</p>
-          <div ref={scrollBottomRef}></div>
-        </li>
-      );
-    } else {
-      return (
-        <li className="sent" key={index}>
-          <img src="http://emilcarlsson.se/assets/mikeross.png" alt="" />
-          <p>{value.messages}</p>
-        </li>
-      );
-    }
-  });
-
   useEffect(() => {
-    const getMessages = async () => {
-      if (active) {
-        try {
-          const response = await axios.get(
-            `http://localhost:5000/messagesget/${active._id}`,
-            {
-              headers: {
-                Authorization: "Bearer " + token,
-              },
-            }
-          );
+    // const data1 = async () => {
+    //   try {
+    //     await axios
+    //       .get("http://localhost:5000/Allusers")
+    //       .then((res) => {
+    //         setData(res.data);
+    //       })
+    //       .catch((err) => console.log(err));
+    //   } catch (err) {
+    //     console.log(err);
+    //   }
+    // };
+    // data1();
+    socket.emit("getUsers", "kdks");
+    socket.on("setAllusers", (allusers) => {
+      console.log(allusers);
+      setData(allusers);
+    });
+    console.log(user._id);
+    socket.emit("getfriendlist", user._id);
 
-          setMessages(response.data);
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    };
-    getMessages();
-  }, [active]);
-
-  socket.on("receiveMessage", (msg) => {
-    console.log(msg.senderId === active._id);
-    console.log(msg.senderId, active, "dsljfhskjdfhkjsdss");
-
-    // if (msg.senderId === active._id) {
-    setMessages([...messages, msg]);
-    // }
-  });
-
-  const resConversation = async (friend) => {
-    const response = await axios.get(
-      `http://localhost:5000/conversationid/${friend._id}`,
-      {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      }
-    );
-    console.log(response.data);
-    setConversation(response.data);
-    // socket.emit("join-room", response.data._id);
-    // socket.on("oldMessage", (oldmessage) => {
-    //   setMessages(oldmessage);
+    // socket.on("showingfrindlist", (friendList) => {
+    //   console.log(friendList);
+    //   setchatlist(friendList);
     // });
-  };
-  const RefScrollTop = () => {
-    scrollBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-  useEffect(() => {
-    RefScrollTop();
-  }, [messages]);
 
-  useEffect(() => {
-    data1();
     (async () => {
       const response = await axios.get("http://localhost:5000/loggeduser", {
         headers: {
@@ -256,6 +196,43 @@ const Homepage = () => {
   }, []);
 
   useEffect(() => {
+    const getMessages = async () => {
+      if (active) {
+        try {
+          const response = await axios.get(
+            `http://localhost:5000/messagesget/${active._id}`,
+            {
+              headers: {
+                Authorization: "Bearer " + token,
+              },
+            }
+          );
+
+          // setMessages(response.data);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    };
+    getMessages();
+  }, [active]);
+
+  socket.on("receiveMessage", (msg) => {
+    console.log(active.conversationId === msg[msg.length - 1].chatConnectionId);
+    console.log(msg);
+    if (msg[msg.length - 1].chatConnectionId === active.conversationId) {
+      setMessages(msg);
+    }
+  });
+
+  const RefScrollTop = () => {
+    scrollBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => {
+    RefScrollTop();
+  }, [messages]);
+
+  useEffect(() => {
     const keyDownHandler = (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -264,7 +241,7 @@ const Homepage = () => {
           sendMessages,
           "active._idactive._idactive._idactive._id"
         );
-        sendMessage(active._id, sendMessages);
+        sendMessage(active._id, active.conversationId, sendMessages);
       }
     };
     document.addEventListener("keydown", keyDownHandler);
@@ -340,14 +317,14 @@ const Homepage = () => {
                   }}
                   key={index}
                   onClick={() => {
-                    console.log(
-                      friend,
-                      "66666666666666666666666666666666666666"
-                    );
                     setActive(friend);
                     messageConnection(friend._id);
-                    resConversation(friend);
+                    // resConversation(friend);
                     // getMessages();
+                    socket.emit("join-room", friend.conversationId);
+                    // socket.on("oldMessage", (oldsmg) => {
+                    //   setMessages(oldsmg);
+                    // });
                   }}
                 >
                   <div className="wrap">
@@ -460,7 +437,30 @@ const Homepage = () => {
         </div>
         <div className="messages">
           <ul ref={scrollRef} id="textDom">
-            {messageslist}
+            {messages?.map((value, index) => {
+              if (value.senderId === user._id) {
+                return (
+                  <li className="replies" key={index}>
+                    <img
+                      src="http://emilcarlsson.se/assets/mikeross.png"
+                      alt=""
+                    />
+                    <p>{value.messages}</p>
+                    <div ref={scrollBottomRef}></div>
+                  </li>
+                );
+              } else {
+                return (
+                  <li className="sent" key={index}>
+                    <img
+                      src="http://emilcarlsson.se/assets/mikeross.png"
+                      alt=""
+                    />
+                    <p>{value.messages}</p>
+                  </li>
+                );
+              }
+            })}
           </ul>
         </div>
         <div className="message-input">
@@ -476,7 +476,7 @@ const Homepage = () => {
               className="submit"
               onClick={(e) => {
                 e.preventDefault();
-                sendMessage(active._id, sendMessages);
+                sendMessage(active._id, active.conversationId, sendMessages);
                 setsendMessages("");
               }}
             >
