@@ -40,7 +40,7 @@ io.on("connection", function (socket) {
     //   users.push(room);
     // }
     let oldMsg = await Messages.find({ chatConnectionId: room });
-    socket.to(room).emit("oldMessage", oldMsg);
+    socket.emit("oldMessage", oldMsg);
   });
 
   // sending and receiving messages
